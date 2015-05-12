@@ -1,5 +1,6 @@
 module TextBuffer where
 
+import TextBufferStyles exposing (..)
 import Buffer exposing (..)
 import Char
 import Signal exposing ((<~))
@@ -58,20 +59,7 @@ showLine ({current}, line) = let
       | otherwise   -> case xs of
           []      -> [span [cursorStyle] [text "_"]]
           (y::ys) -> [span [cursorStyle] [text (String.fromChar y)], text (toString ys)]
-  in div [] (left::rest)
-
-{--}
-bufferStyle : Attribute
-bufferStyle = style
-  [ ("font-family", "monospace")
-  --, ("padding", "20px 20px")
-  ]
---}
-
-cursorStyle : Attribute
-cursorStyle = style
-  [ ("background-color", "grey") 
-  ]
+  in div [lineStyle] (left::rest)
 
 main : Signal Html
 main = view <~ model 
