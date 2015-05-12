@@ -1,5 +1,5 @@
 module TextBufferStyles
-  ( lineStyle, bufferStyle, cursorStyle
+  ( lineStyle, lineNumStyle, bufferStyle, cursorStyle
   ) where
 
 import Html exposing (..)
@@ -19,4 +19,9 @@ bufferStyle = style
 cursorStyle : Attribute
 cursorStyle = style
   [ ("background-color", "grey") 
+  ]
+
+lineNumStyle = style
+  [ ("display", "inline-block")
+  , ("width", "2em")
   ]

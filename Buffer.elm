@@ -14,7 +14,7 @@ import Debug
 
 type Line a = Line (List a, List a) (Int, Int)
 type alias Buffer a = Line (Line a)
-type alias LineData = { current : Bool }
+type alias LineData = { num : Int, current : Bool }
 
 isEmpty : Line a -> Bool
 isEmpty l = (getLengths l) == (0,0)
@@ -31,13 +31,13 @@ mapLine f g (Line (xs, bs) len) = Line (map f xs, map g bs) len
 asList : Line a -> List a
 asList (Line (xs, bs) _) = append (reverse bs) xs
 
-tag : Bool -> Line a -> (LineData, Line a)
-tag b l = ({ current=b }, l)
+tag : Int -> Bool -> Line a -> (LineData, Line a)
+tag n b l = ({ num=n, current=b }, l)
 
 asTaggedList : Buffer a -> List (LineData, Line a)
-asTaggedList (Line (l::ls, bs) _) = let
-    taggedls = (tag True l) :: map (tag False) ls
-    taggedbs = map (tag False) bs
+asTaggedList (Line (l::ls, bs) (n,m)) = let
+    taggedls = (tag (m+1) True l) :: indexedMap (\i l' -> tag (i+m+2) False l') ls
+    taggedbs = indexedMap (\i l' -> tag (m-i) False l') bs
   in append (reverse taggedbs) taggedls
 
 emptyLine : Line a

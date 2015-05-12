@@ -9,7 +9,7 @@ import Html.Attributes exposing (class, style)
 import Graphics.Element exposing (Element, show, flow, down)
 import Keyboard
 import List exposing (map, reverse, foldr, append)
-import String exposing (cons)
+import String exposing (cons, fromList)
 
 -- MODEL
 
@@ -19,8 +19,8 @@ type alias Model = Buffer Char
 
 type Action = Up | Down | Left | Right | Insert Char | Noop
 
-insertChar : Char -> Action
-insertChar c = Insert c
+insertChar : Keyboard.KeyCode -> Action
+insertChar c = Insert (Char.fromCode c)
 
 {--}
 arrToAction : { x : Int, y : Int } -> Action
@@ -47,19 +47,16 @@ update action model = case action of
 view : Model -> Html
 view m = div [bufferStyle] (map showLine (asTaggedList m))
 
-toString : List Char -> String
-toString cs = String.concat (map String.fromChar cs)
-
 showLine : (LineData, Line Char) -> Html
-showLine ({current}, line) = let
+showLine ({num, current}, line) = let
     (xs, bs) = getLists line
-    left = text << toString <| reverse bs
+    left = text << fromList <| reverse bs
     rest = if
-      | not current -> [text (toString xs)]
+      | not current -> [text (fromList xs)]
       | otherwise   -> case xs of
           []      -> [span [cursorStyle] [text "_"]]
-          (y::ys) -> [span [cursorStyle] [text (String.fromChar y)], text (toString ys)]
-  in div [lineStyle] (left::rest)
+          (y::ys) -> [span [cursorStyle] [text (String.fromChar y)], text (fromList ys)]
+  in div [lineStyle] ((span [lineNumStyle] [text (toString num)])::left::rest)
 
 main : Signal Html
 main = view <~ model 
@@ -69,6 +66,6 @@ model = Signal.foldp update (insertLine emptyLine emptyBuffer) actions
 
 actions : Signal Action
 actions = let
-    keys = (insertChar << Char.fromCode) <~ Keyboard.presses
+    keys = insertChar  <~ Keyboard.presses
     arrs = arrToAction <~ Keyboard.arrows
   in Signal.merge keys arrs
