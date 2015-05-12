@@ -13,7 +13,6 @@ import String exposing (cons)
 -- MODEL
 
 type alias Model = Buffer Char
-type alias LineData = { current : Bool }
 
 -- UPDATE
 
@@ -45,22 +44,14 @@ update action model = case action of
 -- VIEW
 
 view : Model -> Html
-view m = div [bufferStyle] (map showLine (f m))
-
-tag : Bool -> Line Char -> (LineData, Line Char)
-tag b l = ({ current=b }, l)
-
-f : Model -> List (LineData, Line Char)
-f (l::ls, bs) = let
-    taggedls = (tag True l) :: map (tag False) ls
-    taggedbs = map (tag False) bs
-  in append (reverse taggedbs) taggedls
+view m = div [bufferStyle] (map showLine (asTaggedList m))
 
 toString : List Char -> String
 toString cs = String.concat (map String.fromChar cs)
 
 showLine : (LineData, Line Char) -> Html
-showLine ({current}, (xs, bs)) = let
+showLine ({current}, line) = let
+    (xs, bs) = getLists line
     left = text << toString <| reverse bs
     rest = if
       | not current -> [text (toString xs)]

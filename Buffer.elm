@@ -1,5 +1,7 @@
 module Buffer
-  ( Line, Buffer, asList, mapLine
+  ( Line, Buffer, LineData
+  , getLists
+  , asList, asTaggedList, mapLine
   , goLeft, goRight
   , goUp, goDown
   , insertAtCursor
@@ -8,57 +10,70 @@ module Buffer
 
 import List exposing (..)
 
-type alias Line a = (List a, List a)
+type Line a = Line (List a, List a) (Int, Int)
 type alias Buffer a = Line (Line a)
+type alias LineData = { current : Bool }
+
+getLists : Line a -> (List a, List a)
+getLists (Line lists _) = lists
 
 mapLine : (a -> b) -> (a -> b) -> Line a -> Line b
-mapLine f g (xs, bs) = (map f xs, map g bs)
+mapLine f g (Line (xs, bs) len) = Line (map f xs, map g bs) len
 
 asList : Line a -> List a
-asList (xs, bs) = append (reverse bs) xs
+asList (Line (xs, bs) _) = append (reverse bs) xs
+
+tag : Bool -> Line a -> (LineData, Line a)
+tag b l = ({ current=b }, l)
+
+asTaggedList : Buffer a -> List (LineData, Line a)
+asTaggedList (Line (l::ls, bs) _) = let
+    taggedls = (tag True l) :: map (tag False) ls
+    taggedbs = map (tag False) bs
+  in append (reverse taggedbs) taggedls
 
 emptyLine : Line a
-emptyLine = ([], [])
+emptyLine = Line ([], []) (0, 0)
 
 emptyBuffer : Buffer a
 emptyBuffer = emptyLine
 
 goLeftL : Line a -> Line a
-goLeftL line = case line of
-  (xs, []) -> (xs, [])
-  (xs, b::bs) -> (b::xs, bs)
+goLeftL (Line lists (n,m)) = case lists of
+  (xs, []) -> Line (xs, []) (n, m)
+  (xs, b::bs) -> Line (b::xs, bs) (n+1, m-1)
 
 goRightL : Line a -> Line a
-goRightL line = case line of
-  ([], bs) -> ([], bs)
-  (x::xs, bs) -> (xs, x::bs)
+goRightL (Line lists (n,m)) = case lists of
+  ([], bs) -> Line ([], bs) (n,m)
+  (x::xs, bs) -> Line (xs, x::bs) (n-1, m+1)
 
 goUp : Buffer a -> Buffer a
 goUp = goLeftL
 
 goDown : Buffer a -> Buffer a
-goDown buf = case buf of
-  ([], bs) -> ([], bs)
-  ([l], bs) -> ([l], bs)
-  (l::ls, bs) -> (ls, l::bs)
+goDown (Line buf (n,m)) = case buf of
+  ([], bs) -> Line ([], bs) (n,m)
+  ([l], bs) -> Line ([l], bs) (n,m)
+  (l::ls, bs) -> Line (ls, l::bs) (n-1, m+1)
 
 goLeft : Buffer a -> Buffer a
-goLeft buf = case buf of
-  ([], bs) -> ([], bs)
-  (l::ls, bs) -> ((goLeftL l)::ls, bs)
+goLeft (Line buf len) = case buf of
+  ([], bs) -> Line ([], bs) len
+  (l::ls, bs) -> Line ((goLeftL l)::ls, bs) len
 
 goRight : Buffer a -> Buffer a
-goRight buf = case buf of
-  ([], bs) -> ([], bs)
-  (l::ls, bs) -> ((goRightL l)::ls, bs)
+goRight (Line buf len) = case buf of
+  ([], bs) -> Line ([], bs) len
+  (l::ls, bs) -> Line ((goRightL l)::ls, bs) len
 
 insertLine : Line a -> Buffer a -> Buffer a
-insertLine l (ls, bs) = (l::ls, bs)
+insertLine l (Line (ls, bs) (n,m)) = Line (l::ls, bs) (n+1, m)
 
 insertInLine : a -> Line a -> Line a
-insertInLine x (xs, bs) = (xs, x::bs)
+insertInLine x (Line (xs, bs) (n,m)) = Line (xs, x::bs) (n, m+1)
 
 insertAtCursor : a -> Buffer a -> Buffer a
-insertAtCursor x buf = case buf of
-  ([], bs) -> ([], bs)
-  (l::ls, bs) -> ((insertInLine x l)::ls, bs)
+insertAtCursor x (Line buf len) = case buf of
+  ([], bs) -> Line ([], bs) len
+  (l::ls, bs) -> Line ((insertInLine x l)::ls, bs) len
