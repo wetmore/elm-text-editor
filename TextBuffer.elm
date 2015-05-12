@@ -64,7 +64,7 @@ showLine ({current}, line) = let
 bufferStyle : Attribute
 bufferStyle = style
   [ ("font-family", "monospace")
-  , ("padding", "20px 20px")
+  --, ("padding", "20px 20px")
   ]
 --}
 
@@ -77,7 +77,9 @@ main : Signal Html
 main = view <~ model 
 
 model : Signal Model
-model = Signal.foldp update (insertLine emptyLine (insertLine emptyLine emptyBuffer)) actions
+model = Signal.foldp update (insertLine emptyLine
+                            (insertLine emptyLine 
+                            (insertLine emptyLine emptyBuffer))) actions
 
 actions : Signal Action
 actions = let

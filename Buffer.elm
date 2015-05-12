@@ -10,12 +10,17 @@ module Buffer
 
 import List exposing (..)
 
+import Debug
+
 type Line a = Line (List a, List a) (Int, Int)
 type alias Buffer a = Line (Line a)
 type alias LineData = { current : Bool }
 
 getLists : Line a -> (List a, List a)
 getLists (Line lists _) = lists
+
+getLengths : Line a -> (Int, Int)
+getLengths (Line _ len) = len
 
 mapLine : (a -> b) -> (a -> b) -> Line a -> Line b
 mapLine f g (Line (xs, bs) len) = Line (map f xs, map g bs) len
@@ -48,14 +53,31 @@ goRightL (Line lists (n,m)) = case lists of
   ([], bs) -> Line ([], bs) (n,m)
   (x::xs, bs) -> Line (xs, x::bs) (n-1, m+1)
 
+moveCursorTo : Int -> Line a -> Line a
+moveCursorTo i line = let
+   (Line (xs, bs) (n,m)) = line
+  in if
+    | i > n + m -> Line ([], append (reverse xs) bs) (0, n + m)
+    | i < 0     -> Line (append (reverse bs) xs, []) (n + m, 0)
+    | i > m     -> moveCursorTo i (goRightL line)
+    | i < m     -> moveCursorTo i (goLeftL line)
+    | otherwise -> line
+
 goUp : Buffer a -> Buffer a
-goUp = goLeftL
+goUp (Line lists (n,m)) = case lists of
+  (ls, [])       -> Line (ls, []) (n,m)
+  (l::ls, b::bs) -> let
+      (_, i) = getLengths l
+    in Line ((moveCursorTo i b)::l::ls, bs) (n+1, m-1)
+
 
 goDown : Buffer a -> Buffer a
-goDown (Line buf (n,m)) = case buf of
-  ([], bs) -> Line ([], bs) (n,m)
-  ([l], bs) -> Line ([l], bs) (n,m)
-  (l::ls, bs) -> Line (ls, l::bs) (n-1, m+1)
+goDown (Line lists (n,m)) = case lists of
+  ([], bs)       -> Line ([], bs) (n,m)
+  ([l], bs)       -> Line ([l], bs) (n,m)
+  (l::l'::ls, bs) -> let
+      (_, i) = getLengths l
+    in Line ((moveCursorTo i l')::ls, l::bs) (n-1, m+1)
 
 goLeft : Buffer a -> Buffer a
 goLeft (Line buf len) = case buf of
