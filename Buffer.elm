@@ -16,6 +16,9 @@ type Line a = Line (List a, List a) (Int, Int)
 type alias Buffer a = Line (Line a)
 type alias LineData = { current : Bool }
 
+isEmpty : Line a -> Bool
+isEmpty l = (getLengths l) == (0,0)
+
 getLists : Line a -> (List a, List a)
 getLists (Line lists _) = lists
 
@@ -73,8 +76,10 @@ goUp (Line lists (n,m)) = case lists of
 
 goDown : Buffer a -> Buffer a
 goDown (Line lists (n,m)) = case lists of
-  ([], bs)       -> Line ([], bs) (n,m)
-  ([l], bs)       -> Line ([l], bs) (n,m)
+  ([], bs)  -> Line ([], bs) (n,m)
+  ([l], bs) -> case (isEmpty l) of
+    True  -> Line ([l], bs) (n,m)
+    False -> insertLine emptyLine (Line ([], l::bs) (0, m+1))
   (l::l'::ls, bs) -> let
       (_, i) = getLengths l
     in Line ((moveCursorTo i l')::ls, l::bs) (n-1, m+1)

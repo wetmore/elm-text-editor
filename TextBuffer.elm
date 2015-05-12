@@ -65,9 +65,7 @@ main : Signal Html
 main = view <~ model 
 
 model : Signal Model
-model = Signal.foldp update (insertLine emptyLine
-                            (insertLine emptyLine 
-                            (insertLine emptyLine emptyBuffer))) actions
+model = Signal.foldp update (insertLine emptyLine emptyBuffer) actions
 
 actions : Signal Action
 actions = let
