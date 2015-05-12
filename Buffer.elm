@@ -1,5 +1,5 @@
 module Buffer
-  ( Buffer, asList
+  ( Line, Buffer, asList, mapLine
   , goLeft, goRight
   , goUp, goDown
   , insertAtCursor
@@ -10,6 +10,9 @@ import List exposing (..)
 
 type alias Line a = (List a, List a)
 type alias Buffer a = Line (Line a)
+
+mapLine : (a -> b) -> (a -> b) -> Line a -> Line b
+mapLine f g (xs, bs) = (map f xs, map g bs)
 
 asList : Line a -> List a
 asList (xs, bs) = append (reverse bs) xs
@@ -28,14 +31,16 @@ goLeftL line = case line of
 goRightL : Line a -> Line a
 goRightL line = case line of
   ([], bs) -> ([], bs)
-  ([x], bs) -> ([x], bs)
   (x::xs, bs) -> (xs, x::bs)
 
 goUp : Buffer a -> Buffer a
 goUp = goLeftL
 
 goDown : Buffer a -> Buffer a
-goDown = goRightL
+goDown buf = case buf of
+  ([], bs) -> ([], bs)
+  ([l], bs) -> ([l], bs)
+  (l::ls, bs) -> (ls, l::bs)
 
 goLeft : Buffer a -> Buffer a
 goLeft buf = case buf of
