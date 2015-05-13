@@ -1,26 +1,27 @@
 module TextBuffer where
 
 import TextBufferStyles exposing (..)
+import LineStyles exposing (LineStyle)
 import Buffer exposing (..)
 import Char
-import Signal exposing ((<~))
+import Signal exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Graphics.Element exposing (Element, show, flow, down)
-import Keyboard
-import List exposing (map, reverse, foldr, append)
+import Time exposing (fpsWhen, since, Time, millisecond)
+import List exposing (reverse, foldr, append)
 import String exposing (cons, fromList)
 
 -- MODEL
 
 type alias Model = Buffer Char
 
+oneLiner : Model
+oneLiner = insertLine emptyLine emptyBuffer
+
 -- UPDATE
 
-type Action = Up | Down | Left | Right | Insert Char | Noop
-
-insertChar : Keyboard.KeyCode -> Action
-insertChar c = Insert (Char.fromCode c)
+type Action = Up | Down | Left | Right | Insert Char | Noop | Delete
 
 {--}
 arrToAction : { x : Int, y : Int } -> Action
@@ -39,33 +40,39 @@ update action model = case action of
   Left -> goLeft model
   Right -> goRight model
   Insert c -> insertAtCursor c model
+  Delete -> removeAtCursor model
   Noop -> model
 
 
 -- VIEW
 
 view : Model -> Html
-view m = div [bufferStyle] (map showLine (asTaggedList m))
+view = viewWith LineStyles.default
 
-showLine : (LineData, Line Char) -> Html
-showLine ({num, current}, line) = let
+viewWith : LineStyle -> Model -> Html
+viewWith sty m = div [bufferStyle] (List.map (showLineWith sty) (asTaggedList m))
+
+showLineWith : LineStyle -> (LineData, Line Char) -> Html
+showLineWith sty ({num, current}, line) = let
     (xs, bs) = getLists line
     left = text << fromList <| reverse bs
     rest = if
       | not current -> [text (fromList xs)]
       | otherwise   -> case xs of
-          []      -> [span [cursorStyle] [text "_"]]
-          (y::ys) -> [span [cursorStyle] [text (String.fromChar y)], text (fromList ys)]
-  in div [lineStyle] ((span [lineNumStyle] [text (toString num)])::left::rest)
+          []      -> [span [sty.cursor] [text "_"]]
+          (y::ys) -> [span [sty.cursor] [text (String.fromChar y)], text (fromList ys)]
+  in div [sty.line] ((span [sty.lineNum] [text (toString num)])::left::rest)
 
-main : Signal Html
-main = view <~ model 
+-- CONTROL
 
-model : Signal Model
-model = Signal.foldp update (insertLine emptyLine emptyBuffer) actions
+repeatAfterIf : Time -> number -> (a -> Bool) -> Signal a -> Signal a
+repeatAfterIf time fps predicate s =
+  let repeatable = predicate <~ s
+      delayedRep = repeatable |> filter identity False |> since time |> Signal.map not
+      resetDelay = merge (always False <~ s) delayedRep
+      repeats = fpsWhen fps <| (&&) <~ repeatable ~ (dropRepeats resetDelay)
+  in sampleOn repeats s
 
-actions : Signal Action
-actions = let
-    keys = insertChar  <~ Keyboard.presses
-    arrs = arrToAction <~ Keyboard.arrows
-  in Signal.merge keys arrs
+repeatAfterMs : Int -> Signal a -> Signal a
+repeatAfterMs n s = repeatAfterIf (toFloat n * millisecond) 30 (always True) s 
+

@@ -4,17 +4,16 @@ module Buffer
   , asList, asTaggedList, mapLine
   , goLeft, goRight
   , goUp, goDown
-  , insertAtCursor
+  , insertAtCursor, removeAtCursor
   , insertLine, emptyLine, emptyBuffer
   ) where
 
 import List exposing (..)
 
-import Debug
-
 type Line a = Line (List a, List a) (Int, Int)
-type alias Buffer a = Line (Line a)
 type alias LineData = { num : Int, current : Bool }
+
+type alias Buffer a = Line (Line a)
 
 isEmpty : Line a -> Bool
 isEmpty l = (getLengths l) == (0,0)
@@ -84,23 +83,31 @@ goDown (Line lists (n,m)) = case lists of
       (_, i) = getLengths l
     in Line ((moveCursorTo i l')::ls, l::bs) (n-1, m+1)
 
-goLeft : Buffer a -> Buffer a
-goLeft (Line buf len) = case buf of
+atCurrentLine : (Line a -> Line a) -> Buffer a -> Buffer a
+atCurrentLine f (Line buf len) = case buf of
   ([], bs) -> Line ([], bs) len
-  (l::ls, bs) -> Line ((goLeftL l)::ls, bs) len
+  (l::ls, bs) -> Line (f l::ls, bs) len
+
+goLeft : Buffer a -> Buffer a
+goLeft = atCurrentLine goLeftL
 
 goRight : Buffer a -> Buffer a
-goRight (Line buf len) = case buf of
-  ([], bs) -> Line ([], bs) len
-  (l::ls, bs) -> Line ((goRightL l)::ls, bs) len
+goRight = atCurrentLine goRightL
+
+insertAtCursor : a -> Buffer a -> Buffer a
+insertAtCursor x = atCurrentLine (insertInLine x)
+
+removeAtCursor : Buffer a -> Buffer a
+removeAtCursor = atCurrentLine removeInLine
 
 insertLine : Line a -> Buffer a -> Buffer a
 insertLine l (Line (ls, bs) (n,m)) = Line (l::ls, bs) (n+1, m)
 
+removeInLine : Line a -> Line a
+removeInLine (Line (xs, bs) (n,m)) = case xs of
+  []    -> Line ([], bs) (n,m)
+  x::xs -> Line (xs, bs) (n-1,m)
+
 insertInLine : a -> Line a -> Line a
 insertInLine x (Line (xs, bs) (n,m)) = Line (xs, x::bs) (n, m+1)
 
-insertAtCursor : a -> Buffer a -> Buffer a
-insertAtCursor x (Line buf len) = case buf of
-  ([], bs) -> Line ([], bs) len
-  (l::ls, bs) -> Line ((insertInLine x l)::ls, bs) len
