@@ -59,9 +59,9 @@ showLineWith sty ({num, current}, line) = let
     rest = if
       | not current -> [text (fromList xs)]
       | otherwise   -> case xs of
-          []      -> [span [sty.cursor] [text "_"]]
-          (y::ys) -> [span [sty.cursor] [text (String.fromChar y)], text (fromList ys)]
-  in div [sty.line] ((span [sty.lineNum] [text (toString num)])::left::rest)
+          []      -> [span [sty.cursor] [text " "]]
+          (y::ys) -> [span [sty.cursor] [text << String.fromChar <| y], text << fromList <| ys]
+  in div [sty.line] <| (span [sty.lineNum] [text (toString num)])::left::rest
 
 -- CONTROL
 
