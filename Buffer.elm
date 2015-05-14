@@ -1,4 +1,5 @@
-module Buffer
+module Buffer where
+{-
   ( Line, Buffer, LineData
   , getLists
   , asList, asTaggedList, mapLine
@@ -7,6 +8,7 @@ module Buffer
   , insertAtCursor, removeAtCursor
   , insertLine, emptyLine, emptyBuffer
   ) where
+-}
 
 import List exposing (..)
 
@@ -17,6 +19,18 @@ type alias Buffer a = Line (Line a)
 
 isEmpty : Line a -> Bool
 isEmpty l = (getLengths l) == (0,0)
+
+atEnd : Line a -> Bool
+atEnd (Line _ (n,_)) = n == 0
+
+beginningOfLine : Buffer a -> Buffer a
+beginningOfLine = atCurrentLine <| moveCursorTo 0
+
+endOfLine : Buffer a -> Buffer a 
+endOfLine = atCurrentLine (\l -> moveCursorTo (length l) l)
+
+length : Line a -> Int
+length (Line _ (n,m)) = n + m
 
 getLists : Line a -> (List a, List a)
 getLists (Line lists _) = lists

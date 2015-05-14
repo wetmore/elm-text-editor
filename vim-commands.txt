@@ -12,32 +12,6 @@ http://www.fprintf.net/vimCheatSheet.html
 http://vimdoc.sourceforge.net/htmldoc/motion.html
 
 
-type EditType = Insert | Replace
-type EditorMode = NormalMode | EditMode EditType 
-
-type CursorPos = UnderCursor | AfterCursor | BOL | EOL
-
-type EditorAction = Count Int EditorAction | C Command | M Motion | Cancel
-
-type ComboState = Completed EditorAction | Partial (Key -> ComboState) | Null
-
-type Direction = Forward | Backward
-type Vertical = Above | Below
-type Motion = Up | Down | Left | Right
-            | BeginningOfLine { nonBlank : Bool }
-            | EndOfLine
-            | RepeatFind
-            | ReverseFind
-            | GotoLine
-            | Find Direction Char
-            | LineUp | LineDown
-
-type Command = Append
-             | Insert CursorPos
-             | Delete Motion
-             | NewLine Vertical
-             | ReplaceChar c
-
 # Commands
 
 ## unary:

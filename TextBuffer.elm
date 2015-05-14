@@ -21,7 +21,7 @@ oneLiner = insertLine emptyLine emptyBuffer
 
 -- UPDATE
 
-type Action = Up | Down | Left | Right | Insert Char | Noop | Delete
+type Action = Up | Down | Left | Right | Insert Char | Noop | Delete | EOL | BOL
 
 {--
 arrToAction : { x : Int, y : Int } -> Action
@@ -42,7 +42,19 @@ update action model = case action of
   Insert c -> insertAtCursor c model
   Delete -> removeAtCursor model
   Noop -> model
+  EOL -> endOfLine model
+  BOL -> beginningOfLine model
 
+firstNonEmpty : Line Char -> Int
+firstNonEmpty l = let 
+    trimmedLength = String.length << String.trimLeft << fromList << asList <| l
+  in (length l) - trimmedLength
+
+beginningOfLine : Model -> Model
+beginningOfLine = atCurrentLine (\l -> moveCursorTo (firstNonEmpty l) l)
+
+endOfLine : Model -> Model
+endOfLine = atCurrentLine (\l -> moveCursorTo (length l) l)
 
 -- VIEW
 
@@ -60,7 +72,10 @@ showLineWith sty ({num, current}, line) = let
       | not current -> [text (fromList xs)]
       | otherwise   -> case xs of
           []      -> [span [sty.cursor] [text " "]]
-          (y::ys) -> [span [sty.cursor] [text << String.fromChar <| y], text << fromList <| ys]
+          (y::ys) ->
+            [ span [sty.cursor] [text << String.fromChar <| y]
+            , text << fromList <| ys
+            ]
   in div [sty.line] <| (span [sty.lineNum] [text (toString num)])::left::rest
 
 -- CONTROL

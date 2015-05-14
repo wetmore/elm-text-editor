@@ -35,7 +35,7 @@ type Command = EnterInsert CursorPos
              | NewLine Vertical
              | ReplaceChar Char
 
-type Key = Press Char | Esc
+type Key = Press Char | Esc | Ret
 
 
 -- INTERNAL
@@ -138,6 +138,9 @@ pressChar c = Press (Char.fromCode c)
 
 keys : Signal Key
 keys = Signal.merge esc <| pressChar <~ Keyboard.presses
+
+ret : Signal Key
+ret = Signal.sampleOn Keyboard.enter (Signal.constant Ret) 
 
 esc : Signal Key
 esc = let

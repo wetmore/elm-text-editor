@@ -54,10 +54,14 @@ insertMode m = {mode=EditMode Insert, buffer=m}
 update : Action -> Model -> Model
 update (key, editorAction) {mode, buffer} = case mode of
   EditMode _ -> case key of
+    Ret     -> insertMode <| TB.update (TB.Down) buffer
     Esc     -> normalMode buffer
     Press c -> insertMode <| TB.update (TB.Insert c) buffer
   NormalMode -> case editorAction of 
-    C (EnterInsert _) -> insertMode buffer
+    C (EnterInsert UnderCursor) -> insertMode buffer
+    C (EnterInsert AfterCursor) -> insertMode <| TB.update (TB.Right) buffer
+    C (EnterInsert EOL) -> insertMode <| TB.update (TB.EOL) buffer
+    C (EnterInsert BOL) -> insertMode <| TB.update (TB.BOL) buffer
     M Left  -> normalMode <| TB.update (TB.Left) buffer
     M Down  -> normalMode <| TB.update (TB.Down) buffer
     M Up    -> normalMode <| TB.update (TB.Up) buffer
