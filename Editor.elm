@@ -1,16 +1,19 @@
 module Editor where
 
+import EditorActions exposing (..)
 import TextBuffer as TB
 import Buffer exposing (Line)
 import LineStyles exposing (LineStyle)
+
 import Html exposing (..)
 import Signal exposing (..)
 import Char
+import Time exposing (..)
 
 import Keyboard
 
-
-type EditorMode = NormalMode | InsertMode
+type EditType = Insert | Replace
+type EditorMode = NormalMode | EditMode EditType 
 
 -- MODEL
 
@@ -40,37 +43,27 @@ the textbuffer. The textbuffer handles its own rendering.
 
 -- UPDATE
 
-type Action = Press Char | Esc
-
-type MaybeInt = Nothing | Just Int
-
-
-type BufferAction = MoveUp Int
-                  | MoveDown Int
-                  | MoveLeft Int
-                  | MoveRight Int
-                  | Insert Char
+type alias Action = (Key, EditorAction)
 
 normalMode : TB.Model -> Model
 normalMode m = {mode=NormalMode, buffer=m}
 
 insertMode : TB.Model -> Model
-insertMode m = {mode=InsertMode, buffer=m}
+insertMode m = {mode=EditMode Insert, buffer=m}
 
 update : Action -> Model -> Model
-update action {mode, buffer} = case action of
-  Press c -> case mode of
-    NormalMode -> case c of
-      'i' -> insertMode buffer
-      'h' -> normalMode <| TB.update (TB.Left) buffer
-      'j' -> normalMode <| TB.update (TB.Down) buffer
-      'k' -> normalMode <| TB.update (TB.Up) buffer
-      'l' -> normalMode <| TB.update (TB.Right) buffer
-      'x' -> normalMode <| TB.update (TB.Delete) buffer
-      _  -> normalMode buffer
-    InsertMode -> insertMode <| TB.update (TB.Insert c) buffer
-  Esc -> normalMode buffer
-  
+update (key, editorAction) {mode, buffer} = case mode of
+  EditMode _ -> case key of
+    Esc     -> normalMode buffer
+    Press c -> insertMode <| TB.update (TB.Insert c) buffer
+  NormalMode -> case editorAction of 
+    C (EnterInsert _) -> insertMode buffer
+    M Left  -> normalMode <| TB.update (TB.Left) buffer
+    M Down  -> normalMode <| TB.update (TB.Down) buffer
+    M Up    -> normalMode <| TB.update (TB.Up) buffer
+    M Right -> normalMode <| TB.update (TB.Right) buffer
+    C (Remove Forward) -> normalMode <| TB.update (TB.Delete) buffer
+    _   -> normalMode buffer 
 
 -- VIEW
 
@@ -82,7 +75,7 @@ modeStyle mode = let
     defaultStyle = LineStyles.default
   in case mode of
     NormalMode -> defaultStyle
-    InsertMode -> { defaultStyle | cursor <- LineStyles.solidCursor }
+    EditMode _ -> { defaultStyle | cursor <- LineStyles.solidCursor }
 
 -- CONTROL
 
@@ -90,13 +83,10 @@ main : Signal Html
 main = view <~ model 
 
 model : Signal Model
-model = Signal.foldp update init actions
+model = foldp update init actions
 
-pressChar : Keyboard.KeyCode -> Action
-pressChar c = Press (Char.fromCode c)
-
+-- this is a bad way to do this
+-- is it possible that while in insert mode we build a combo that executes?
 actions : Signal Action
-actions = merge esc <| pressChar <~ Keyboard.presses
+actions = (,) <~ EditorActions.keys ~ EditorActions.signal
 
-esc : Signal Action
-esc = sampleOn (Signal.filter (\x -> x) False <| Keyboard.isDown 27) (constant Esc)

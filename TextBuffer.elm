@@ -23,7 +23,7 @@ oneLiner = insertLine emptyLine emptyBuffer
 
 type Action = Up | Down | Left | Right | Insert Char | Noop | Delete
 
-{--}
+{--
 arrToAction : { x : Int, y : Int } -> Action
 arrToAction {x, y} = if
   | x == -1 -> Left
@@ -65,6 +65,7 @@ showLineWith sty ({num, current}, line) = let
 
 -- CONTROL
 
+{--
 repeatAfterIf : Time -> number -> (a -> Bool) -> Signal a -> Signal a
 repeatAfterIf time fps predicate s =
   let repeatable = predicate <~ s
@@ -75,4 +76,4 @@ repeatAfterIf time fps predicate s =
 
 repeatAfterMs : Int -> Signal a -> Signal a
 repeatAfterMs n s = repeatAfterIf (toFloat n * millisecond) 30 (always True) s 
-
+--}
