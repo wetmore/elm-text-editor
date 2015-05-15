@@ -16,65 +16,65 @@ http://vimdoc.sourceforge.net/htmldoc/motion.html
 
 ## unary:
 
-a	Enter insert, move cursor by 1. Repeat whatever was typed in that session [count] times.
-A	Enter insert at end of current line. Repeat whatever was typed in that session [count] times.
-i	Enter insert. Repeat whatever was typed in that session [count] times.
-I	Enter insert, cursor on first non-blank in line. Repeat whatever was typed in that session [count] times.
-o	Begin a new line below the cursor and insert text, repeat [count] times.
-O	Begin a new line above the cursor and insert text, repeat [count] times.
-x	Delete [count] characters under and after the cursor
-X	Delete [count] characters before the cursor
-D	Delete from under cursor until end of line, plus [count] - 1 following lines
-R	Enter Replace mode. Repeat whatever was typed in that session [count] times.
-~	Switch case of the character under the cursor and move the cursor to the right. If a
-	[count] is given, do that many characters.
-u	Undo [count] changes
-U	Undo all latest changes on one line
-ctrl-R	Redo [count] changes.
-.	Repeat last change, with count replaced by [count]
-s	Delete [count] chars starting from cursor and enter Insert mode.
-S	Clear [count] lines (inclusive) and enter Insert mode. 
+✓	a		Enter insert, move cursor by 1. Repeat whatever was typed in that session [count] times.
+✓	A		Enter insert at end of current line. Repeat whatever was typed in that session [count] times.
+✓	i		Enter insert. Repeat whatever was typed in that session [count] times.
+✓	I		Enter insert, cursor on first non-blank in line. Repeat whatever was typed in that session [count] times.
+✓	o		Begin a new line below the cursor and insert text, repeat [count] times. [newline]
+✓	O		Begin a new line above the cursor and insert text, repeat [count] times. [up, newline]
+✓	x		Delete [count] characters under and after the cursor [delete]
+	X		Delete [count] characters before the cursor [right enough times, delete]
+	D		Delete from under cursor until end of line, plus [count] - 1 following lines [delete enough]
+	R		Enter Replace mode. Repeat whatever was typed in that session [count] times. [not sure]
+	~		Switch case of the character under the cursor and move the cursor to the right. If a 
+			[count] is given, do that many characters.[switchCase]
+	u		Undo [count] changes 
+	U		Undo all latest changes on one line
+	ctrl-R	Redo [count] changes.
+	.		Repeat last change, with count replaced by [count]
+	s		Delete [count] chars starting from cursor and enter Insert mode. [delete]
+	S		Clear [count] lines (inclusive) and enter Insert mode. 
 
 ## binary:
 
-gI	Insert text in column 1 [count] times.
-d{_m_}	delete text that _m_ moves over
-dd	Delete [count] lines. Alias for d_
-r{c}	replace char under cursor with c. No time limit between presses, but ESC cancels
-~{_m_}	switch case of text _m_ moves over
+	gI 		Insert text in column 1 [count] times.
+	d{_m_}	delete text that _m_ moves over
+	dd		Delete [count] lines. Alias for d_
+✓	r{c}	replace char under cursor with c. No time limit between presses, but ESC cancels
+	~{_m_}	switch case of text _m_ moves over
 
 
 # motions (_m_):
 
 ## Unary
 
-h,j,k,l	Move [count] in resp. direction
-0	Move to first char of line
-^	Move to first non-blank char of line
-$	Move to end of line and [count] - 1 lines down
-;	Repeat latest f, t, F or T [count] times.
-,	Repeat latest f, t, F or T in opposite direction [count] times.
--	[count] lines upward, on the first non-blank character (linewise).
-+/<CR>	[count] lines downward, on the first non-blank character (linewise).
-_	[count] - 1 lines downward, on the first non-blank character (linewise).
-G	Goto line [count], default last line, on the first non-blank character.
-w	[count] words forward
-W	[count] WORDS forward
-e	Forward to the end of word [count]
-E	Forward to the end of WORD [count]
-b	[count] words backward
-B	[count] WORDS backward
+✓	h,j,k,l	Move [count] in resp. direction
+	0		Move to first char of line
+	^		Move to first non-blank char of line
+	$		Move to end of line and [count] - 1 lines down
+	;		Repeat latest f, t, F or T [count] times.
+	,		Repeat latest f, t, F or T in opposite direction [count] times.
+	-		[count] lines upward, on the first non-blank character (linewise).
+	+/<CR>	[count] lines downward, on the first non-blank character (linewise).
+	_		[count] - 1 lines downward, on the first non-blank character (linewise).
+	G		Goto line [count], default last line, on the first non-blank character.
+	w		[count] words forward
+	W		[count] WORDS forward
+	e		Forward to the end of word [count]
+	E		Forward to the end of WORD [count]
+	b		[count] words backward
+	B		[count] WORDS backward
 
 ## Binary
 
-f{char}	To [count]'th occurrence of {char} to the right. The cursor is placed on {char} 
-	(inclusive).
-F{char}	To the [count]'th occurrence of {char} to the left. The cursor is placed on {char} 
-	(inclusive).
-t{char}	Till before [count]'th occurrence of {char} to the right. The cursor is placed on the 
-	character left of {char} (inclusive).
-T{char}	Till after [count]'th occurrence of {char} to the left. The cursor is placed on the 
-	character right of {char} (inclusive).
-gg	Goto line [count], default first line, on the first non-blank character.
-ge	Backward to the end of word [count]
-gE	Backward to the end of WORD [count]
+	f{char}	To [count]'th occurrence of {char} to the right. The cursor is placed on {char} 
+			(inclusive).
+	F{char}	To the [count]'th occurrence of {char} to the left. The cursor is placed on {char} 
+			(inclusive).
+	t{char}	Till before [count]'th occurrence of {char} to the right. The cursor is placed on the 
+			character left of {char} (inclusive).
+	T{char}	Till after [count]'th occurrence of {char} to the left. The cursor is placed on the 
+			character right of {char} (inclusive).
+	gg		Goto line [count], default first line, on the first non-blank character.
+	ge		Backward to the end of word [count]
+	gE		Backward to the end of WORD [count]

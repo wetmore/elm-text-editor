@@ -14,7 +14,7 @@ and insert modes with few features.
 - modes (insert, normal, visual)
 - save/load
 - undo/redo
-- decent feature parity with vi
+- decent feature parity with vi. Progress on this front is tracked in the `vim-commands.txt` file.
 - vim's text objects, like `iw` used with certain operators as in `ciw`
 - Multiple open buffers
 
