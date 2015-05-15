@@ -45,6 +45,9 @@ update action model = case action of
   EOL -> endOfLine model
   BOL -> beginningOfLine model
 
+applyActions : List Action -> Model -> Model
+applyActions = foldr update |> flip
+
 firstNonEmpty : Line Char -> Int
 firstNonEmpty l = let 
     trimmedLength = String.length << String.trimLeft << fromList << asList <| l

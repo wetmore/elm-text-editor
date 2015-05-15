@@ -67,6 +67,7 @@ update (key, editorAction) {mode, buffer} = case mode of
     M Up    -> normalMode <| TB.update (TB.Up) buffer
     M Right -> normalMode <| TB.update (TB.Right) buffer
     C (Remove Forward) -> normalMode <| TB.update (TB.Delete) buffer
+    C (ReplaceChar c) -> normalMode <| TB.applyActions [TB.Delete, TB.Insert c] buffer
     _   -> normalMode buffer 
 
 -- VIEW

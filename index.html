@@ -1,0 +1,43 @@
+<html>
+
+<head>
+  <title>Elm Text Editor</title>
+  <script src="elm.js"></script>
+</head>
+
+<body>
+<div id="column">
+  <div id="editor"></div>
+</div>
+</body>
+
+<script type="text/javascript">
+  // function to possibly override keypress
+  trapfunction = function(event) {
+    var keynum;
+       
+    if (window.event) { // eg. IE
+      keynum = window.event.keyCode;
+    } else if (event.which) { // eg. Firefox
+      keynum = event.which;
+    }
+ 
+    if (keynum == 8) { // backspace has code 8
+      return false;
+    }
+    
+    return true;
+  }
+   
+  document.onkeyup = function(event) {
+    return true;
+  }
+   
+  document.onkeydown = trapfunction; // IE, Firefox, Safari
+  document.onkeypress = trapfunction; // only Opera needs the backspace nullifying in onkeypress
+
+  var div = document.getElementById('editor');
+  var editor = Elm.embed(Elm.Editor, div, {});
+</script>
+
+</html>

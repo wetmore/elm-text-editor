@@ -144,5 +144,5 @@ ret = Signal.sampleOn Keyboard.enter (Signal.constant Ret)
 
 esc : Signal Key
 esc = let
-    escDown = (Signal.filter identity False <| Keyboard.isDown 27) 
+    escDown = Signal.filter identity False <| Keyboard.isDown 27
   in Signal.sampleOn escDown (Signal.constant Esc)
