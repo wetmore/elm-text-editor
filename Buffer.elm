@@ -49,9 +49,11 @@ getLists (Line lists _) = lists
 getLengths : Line a -> (Int, Int)
 getLengths (Line _ len) = len
 
--- probably not actually useful
-mapLine : (a -> b) -> (a -> b) -> Line a -> Line b
-mapLine f g (Line (xs, bs) len) = Line (map f xs, map g bs) len
+-- Apply a function to the element under the cursor.
+atCursor : (a -> a) -> Line a -> Line a
+atCursor f (Line lists len) = case lists of
+  ([], bs) -> Line ([], bs) len
+  (x::xs, bs) -> Line (f x::xs, bs) len
 
 asList : Line a -> List a
 asList (Line (xs, bs) _) = append (reverse bs) xs
@@ -125,12 +127,9 @@ beginningOfLine = atCurrentLine <| moveCursorTo 0
 endOfLine : Buffer a -> Buffer a 
 endOfLine = atCurrentLine (\l -> moveCursorTo (length l) l)
 
--- Apply a function on Lines to the current line. In this way, buffers are
--- an instance of Functor a la Haskell, and this is their `fmap`.
+-- Apply a function on Lines to the current line. 
 atCurrentLine : (Line a -> Line a) -> Buffer a -> Buffer a
-atCurrentLine f (Line buf len) = case buf of
-  ([], bs) -> Line ([], bs) len
-  (l::ls, bs) -> Line (f l::ls, bs) len
+atCurrentLine = atCursor
 
 goLeft : Buffer a -> Buffer a
 goLeft = atCurrentLine goLeftL
@@ -138,7 +137,19 @@ goLeft = atCurrentLine goLeftL
 goRight : Buffer a -> Buffer a
 goRight = atCurrentLine goRightL
 
+{-- might be worth finishing if more uses come along
+modifyUnderCursor : (a -> List a) -> Buffer a -> Buffer a
+modifyUnderCursor f buf = let
+    modify l@(Line (xs,bs) (n,m)) = case xs of
+      []    -> l
+      x::xs -> let
+          result = f x
+        in Line (reverse 
+  in atCurrentLine modify
+--}
 
+modifyUnderCursor : (a -> a) -> Buffer a -> Buffer a
+modifyUnderCursor f = atCurrentLine <| atCursor f
 
 insertAtCursor : a -> Buffer a -> Buffer a
 insertAtCursor x = atCurrentLine <| insertInLine x
