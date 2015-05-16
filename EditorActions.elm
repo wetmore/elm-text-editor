@@ -1,20 +1,22 @@
 module EditorActions
   ( EditorAction(..), Motion(..), Command(..)
   , CursorPos(..), Direction(..), Vertical(..)
-  , signal, Key(..), keys
+  , signal, Key(..)
   ) where
 
 import Keyboard
-import Signal exposing ((<~))
+import Signal exposing ((<~), (~), foldp)
 import Char
 import Graphics.Element exposing (show, Element)
 import String exposing (..)
 import Result exposing (Result)
 import Debug
+import Time exposing (Time, timestamp)
 
 -- EXTERNAL
 
-type EditorAction = Count Int EditorAction | C Command | M Motion | Cancel
+type EditorAction = Count Int EditorAction | C Command | M Motion | Noop
+type alias TimedAction = (Key, (Time, EditorAction))
 
 type CursorPos = UnderCursor | AfterCursor | BOL | EOL
 type Direction = Forward | Backward
@@ -81,7 +83,7 @@ handleKey key state = case state of
     Completed action -> Completed <| f action
     _                -> g key
   _         -> case key of
-    Esc     -> Completed Cancel
+    Esc     -> Completed Noop -- Null?
     Press c -> case (Char.isDigit c) of
       True  -> case (c == '0') of
         True  -> bindings c
@@ -130,11 +132,22 @@ completedCombo state = case state of
   Completed act -> Just act
   _             -> Nothing
 
-signal : Signal EditorAction
-signal = Signal.filterMap completedCombo Cancel comboState
+actions : Signal EditorAction
+actions = Signal.filterMap completedCombo Noop comboState
+
+tuples : Signal (Key, (Time, EditorAction))
+tuples = (,) <~ keys ~ (timestamp actions)
+
+dedupe : TimedAction -> TimedAction -> TimedAction
+dedupe (k1, (t1, a1)) (k2, (t2, a2)) = if (t1 == t2) then (k1, (0, Noop)) else (k1, (t1, a1))
+
+signal : Signal (Key, EditorAction)
+signal = (\(a,(b,c)) -> (a,c)) <~ foldp dedupe (Esc, (0, Noop)) tuples
 
 pressChar : Keyboard.KeyCode -> Key
 pressChar c = Press (Char.fromCode c)
+
+-- KEY SIGNALS
 
 keys : Signal Key
 keys = Signal.merge esc <| pressChar <~ Keyboard.presses

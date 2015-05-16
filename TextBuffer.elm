@@ -3,13 +3,13 @@ module TextBuffer where
 import TextBufferStyles exposing (..)
 import LineStyles exposing (LineStyle)
 import Buffer exposing (..)
-import Char
+import Char exposing (isUpper, toUpper, toLower)
 import Signal exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Graphics.Element exposing (Element, show, flow, down)
 import Time exposing (fpsWhen, since, Time, millisecond)
-import List exposing (reverse, foldr, append)
+import List exposing (reverse, foldl, append)
 import String exposing (cons, fromList)
 
 -- MODEL
@@ -21,7 +21,9 @@ oneLiner = insertLine emptyLine emptyBuffer
 
 -- UPDATE
 
-type Action = Up | Down | Left | Right | Insert Char | Noop | Delete | EOL | BOL
+type Action = Up | Down | Left | Right
+            | Insert Char | Delete | EOL | BOL
+            | InsertLine
 
 {--
 arrToAction : { x : Int, y : Int } -> Action
@@ -41,12 +43,12 @@ update action model = case action of
   Right -> goRight model
   Insert c -> insertAtCursor c model
   Delete -> removeAtCursor model
-  Noop -> model
   EOL -> endOfLine model
   BOL -> beginningOfLine model
+  InsertLine -> insertLine emptyLine model
 
 applyActions : List Action -> Model -> Model
-applyActions = foldr update |> flip
+applyActions = foldl update |> flip
 
 firstNonEmpty : Line Char -> Int
 firstNonEmpty l = let 
@@ -58,6 +60,9 @@ beginningOfLine = atCurrentLine (\l -> moveCursorTo (firstNonEmpty l) l)
 
 endOfLine : Model -> Model
 endOfLine = atCurrentLine (\l -> moveCursorTo (length l) l)
+
+swapCase : Char -> Char
+swapCase c = if isUpper c then toLower c else toUpper c
 
 -- VIEW
 

@@ -9,8 +9,9 @@ import Html exposing (..)
 import Signal exposing (..)
 import Char
 import Time exposing (..)
-
 import Keyboard
+
+import Debug
 
 type EditType = Insert | Replace
 type EditorMode = NormalMode | EditMode EditType 
@@ -52,23 +53,29 @@ insertMode : TB.Model -> Model
 insertMode m = {mode=EditMode Insert, buffer=m}
 
 update : Action -> Model -> Model
-update (key, editorAction) {mode, buffer} = case mode of
-  EditMode _ -> case key of
-    Ret     -> insertMode <| TB.update (TB.Down) buffer
-    Esc     -> normalMode buffer
-    Press c -> insertMode <| TB.update (TB.Insert c) buffer
-  NormalMode -> case editorAction of 
-    C (EnterInsert UnderCursor) -> insertMode buffer
-    C (EnterInsert AfterCursor) -> insertMode <| TB.update (TB.Right) buffer
-    C (EnterInsert EOL) -> insertMode <| TB.update (TB.EOL) buffer
-    C (EnterInsert BOL) -> insertMode <| TB.update (TB.BOL) buffer
-    M Left  -> normalMode <| TB.update (TB.Left) buffer
-    M Down  -> normalMode <| TB.update (TB.Down) buffer
-    M Up    -> normalMode <| TB.update (TB.Up) buffer
-    M Right -> normalMode <| TB.update (TB.Right) buffer
-    C (Remove Forward) -> normalMode <| TB.update (TB.Delete) buffer
-    C (ReplaceChar c) -> normalMode <| TB.applyActions [TB.Delete, TB.Insert c] buffer
-    _   -> normalMode buffer 
+update (key, editorAction) {mode, buffer} = let
+    n = normalMode
+    i = insertMode
+    do x = TB.applyActions x buffer
+  in case mode of
+    EditMode _ -> case key of
+      Ret     -> i <| do [TB.Down]
+      Esc     -> n buffer
+      Press c -> i <| do [TB.Insert c]
+    NormalMode -> case editorAction of 
+      C (EnterInsert UnderCursor) -> i buffer
+      C (EnterInsert AfterCursor) -> i <| do [TB.Right]
+      C (EnterInsert EOL)         -> i <| do [TB.EOL]
+      C (EnterInsert BOL)         -> i <| do [TB.BOL]
+      M Left                      -> n <| do [TB.Left]
+      M Down                      -> n <| do [TB.Down]
+      M Up                        -> n <| do [TB.Up]
+      M Right                     -> n <| do [TB.Right]
+      C (Remove Forward)          -> n <| do [TB.Delete]
+      C (ReplaceChar c)           -> n <| do [TB.Delete, TB.Insert c, TB.Left]
+      C (NewLine Below)           -> i <| do [TB.InsertLine, TB.Down]
+      C (NewLine Above)           -> i <| do [TB.Up, TB.InsertLine] -- this is incorrect. What if we are at the top line?
+      _                           -> n buffer 
 
 -- VIEW
 
@@ -88,10 +95,6 @@ main : Signal Html
 main = view <~ model 
 
 model : Signal Model
-model = foldp update init actions
+model = foldp update init (Debug.watch "Editor Actions" <~ EditorActions.signal)
 
--- this is a bad way to do this
--- is it possible that while in insert mode we build a combo that executes?
-actions : Signal Action
-actions = (,) <~ EditorActions.keys ~ EditorActions.signal
 

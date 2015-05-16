@@ -17,17 +17,28 @@ type alias LineData = { num : Int, current : Bool }
 
 type alias Buffer a = Line (Line a)
 
+
+-- LINE OPERATIONS
+-- A `Line a` is a list of `a`s with the notion of a cursor. Operations around
+-- the cursor should be constant time; moving the cursor from the nth element to
+-- the n+1th element shouldn't require moving from the beginning of the list.
+-- This is implemented by splitting the line into two lists (xs,bs), where xs
+-- represents the elements remaining in the list and bs is a stack of elements
+-- we've seen so far. For efficiency of certain operations we also store the
+-- respective lengths of the lists in a tuple (n,m). Hence the list represented
+-- by `Line (xs,bs) (n,m)` is the list `append (reverse bs) xs` (see the
+-- `asList` function below), and it has length n+m.
+-- 
+-- By our convention, the cursor is positioned at the head of xs.
+
+emptyLine : Line a
+emptyLine = Line ([], []) (0, 0)
+
 isEmpty : Line a -> Bool
 isEmpty l = (getLengths l) == (0,0)
 
 atEnd : Line a -> Bool
 atEnd (Line _ (n,_)) = n == 0
-
-beginningOfLine : Buffer a -> Buffer a
-beginningOfLine = atCurrentLine <| moveCursorTo 0
-
-endOfLine : Buffer a -> Buffer a 
-endOfLine = atCurrentLine (\l -> moveCursorTo (length l) l)
 
 length : Line a -> Int
 length (Line _ (n,m)) = n + m
@@ -38,26 +49,12 @@ getLists (Line lists _) = lists
 getLengths : Line a -> (Int, Int)
 getLengths (Line _ len) = len
 
+-- probably not actually useful
 mapLine : (a -> b) -> (a -> b) -> Line a -> Line b
 mapLine f g (Line (xs, bs) len) = Line (map f xs, map g bs) len
 
 asList : Line a -> List a
 asList (Line (xs, bs) _) = append (reverse bs) xs
-
-tag : Int -> Bool -> Line a -> (LineData, Line a)
-tag n b l = ({ num=n, current=b }, l)
-
-asTaggedList : Buffer a -> List (LineData, Line a)
-asTaggedList (Line (l::ls, bs) (n,m)) = let
-    taggedls = (tag (m+1) True l) :: indexedMap (\i l' -> tag (i+m+2) False l') ls
-    taggedbs = indexedMap (\i l' -> tag (m-i) False l') bs
-  in append (reverse taggedbs) taggedls
-
-emptyLine : Line a
-emptyLine = Line ([], []) (0, 0)
-
-emptyBuffer : Buffer a
-emptyBuffer = emptyLine
 
 goLeftL : Line a -> Line a
 goLeftL (Line lists (n,m)) = case lists of
@@ -69,6 +66,7 @@ goRightL (Line lists (n,m)) = case lists of
   ([], bs) -> Line ([], bs) (n,m)
   (x::xs, bs) -> Line (xs, x::bs) (n-1, m+1)
 
+-- zero indexed
 moveCursorTo : Int -> Line a -> Line a
 moveCursorTo i line = let
    (Line (xs, bs) (n,m)) = line
@@ -79,6 +77,29 @@ moveCursorTo i line = let
     | i < m     -> moveCursorTo i (goLeftL line)
     | otherwise -> line
 
+-- Inserts at the cursor. Since the cursor is positioned at the head of xs,
+-- the element is inserted and the cursor is moved to the next character.
+insertInLine : a -> Line a -> Line a
+insertInLine x (Line (xs, bs) (n,m)) = Line (xs, x::bs) (n, m+1)
+
+-- Removes the element under the cursor.
+removeInLine : Line a -> Line a
+removeInLine (Line (xs, bs) (n,m)) = case xs of
+  []    -> Line ([], bs) (n,m)
+  x::xs -> Line (xs, bs) (n-1,m)
+
+
+-- BUFFER OPERATIONS
+-- Buffers are Lines of Lines; the current line is the head of the remaining
+-- lines list, and the cursor position within this line is described above.
+
+emptyBuffer : Buffer a
+emptyBuffer = emptyLine
+
+-- Note this assumes there is always at least one line in a buffer, so the
+-- function is not actually total...........
+-- It may be worth using a data structure which doesn't allow 0 lines in a
+-- buffer. But then we can't use generic line operations on buffers...
 goUp : Buffer a -> Buffer a
 goUp (Line lists (n,m)) = case lists of
   (ls, [])       -> Line (ls, []) (n,m)
@@ -86,7 +107,8 @@ goUp (Line lists (n,m)) = case lists of
       (_, i) = getLengths l
     in Line ((moveCursorTo i b)::l::ls, bs) (n+1, m-1)
 
-
+-- currently this inserts a new line if the last line is full. This is not
+-- quite the behaviour vim has and should be fixed.
 goDown : Buffer a -> Buffer a
 goDown (Line lists (n,m)) = case lists of
   ([], bs)  -> Line ([], bs) (n,m)
@@ -97,6 +119,14 @@ goDown (Line lists (n,m)) = case lists of
       (_, i) = getLengths l
     in Line ((moveCursorTo i l')::ls, l::bs) (n-1, m+1)
 
+beginningOfLine : Buffer a -> Buffer a
+beginningOfLine = atCurrentLine <| moveCursorTo 0
+
+endOfLine : Buffer a -> Buffer a 
+endOfLine = atCurrentLine (\l -> moveCursorTo (length l) l)
+
+-- Apply a function on Lines to the current line. In this way, buffers are
+-- an instance of Functor a la Haskell, and this is their `fmap`.
 atCurrentLine : (Line a -> Line a) -> Buffer a -> Buffer a
 atCurrentLine f (Line buf len) = case buf of
   ([], bs) -> Line ([], bs) len
@@ -108,8 +138,10 @@ goLeft = atCurrentLine goLeftL
 goRight : Buffer a -> Buffer a
 goRight = atCurrentLine goRightL
 
+
+
 insertAtCursor : a -> Buffer a -> Buffer a
-insertAtCursor x = atCurrentLine (insertInLine x)
+insertAtCursor x = atCurrentLine <| insertInLine x
 
 removeAtCursor : Buffer a -> Buffer a
 removeAtCursor = atCurrentLine removeInLine
@@ -117,11 +149,16 @@ removeAtCursor = atCurrentLine removeInLine
 insertLine : Line a -> Buffer a -> Buffer a
 insertLine l (Line (ls, bs) (n,m)) = Line (l::ls, bs) (n+1, m)
 
-removeInLine : Line a -> Line a
-removeInLine (Line (xs, bs) (n,m)) = case xs of
-  []    -> Line ([], bs) (n,m)
-  x::xs -> Line (xs, bs) (n-1,m)
+-- LINEDATA STUFF
+-- This is used to annotate lines with information useful for the editor.
+-- It should probably go in TextBuffer instead of here?
 
-insertInLine : a -> Line a -> Line a
-insertInLine x (Line (xs, bs) (n,m)) = Line (xs, x::bs) (n, m+1)
+tag : Int -> Bool -> Line a -> (LineData, Line a)
+tag n b l = ({ num=n, current=b }, l)
+
+asTaggedList : Buffer a -> List (LineData, Line a)
+asTaggedList (Line (l::ls, bs) (n,m)) = let
+    taggedls = (tag (m+1) True l) :: indexedMap (\i l' -> tag (i+m+2) False l') ls
+    taggedbs = indexedMap (\i l' -> tag (m-i) False l') bs
+  in append (reverse taggedbs) taggedls
 
