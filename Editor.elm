@@ -27,7 +27,7 @@ type alias Model =
   }
 
 init : Model
-init = normalMode <| HBuffer TB.oneLiner <| emptyHistory 100
+init = normalMode <| HBuffer TB.oneLiner <| emptyHistory 100 -- TODO start history with initial model recorded
 
 {-
 The editor should maintain a list of buffers, drawing the current one
@@ -58,31 +58,35 @@ update : Action -> Model -> Model
 update (key, editorAction) {mode, buffer} = let
     (HBuffer buf hist) = buffer
     last = recall hist
-    updatedHist = record buf hist
     n = normalMode
     i = insertMode
-    do x = HBuffer (TB.applyActions x buf) updatedHist
-  in case mode of
-    EditMode _ -> case key of
+    do x = let
+        new = TB.applyActions x buf
+      in HBuffer new (record new hist)
+    doNoSave x = let
+        new = TB.applyActions x buf
+      in HBuffer new hist
+  in case mode of -- 
+    EditMode _ -> case key of -- Key -> TextBuffer
       Ret     -> i <| do [TB.Down]
       Esc     -> n buffer
       Press c -> i <| do [TB.Insert c]
-    NormalMode -> case editorAction of 
+    NormalMode -> case editorAction of  -- EditorAction -> TextBuffer
       C (EnterInsert UnderCursor) -> i buffer
-      C (EnterInsert AfterCursor) -> i <| do [TB.Right]
-      C (EnterInsert EOL)         -> i <| do [TB.EOL]
-      C (EnterInsert BOL)         -> i <| do [TB.BOL]
-      M Left                      -> n <| do [TB.Left]
-      M Down                      -> n <| do [TB.Down]
-      M Up                        -> n <| do [TB.Up]
-      M Right                     -> n <| do [TB.Right]
+      C (EnterInsert AfterCursor) -> i <| doNoSave [TB.Right]
+      C (EnterInsert EOL)         -> i <| doNoSave [TB.EOL]
+      C (EnterInsert BOL)         -> i <| doNoSave [TB.BOL]
+      M Left                      -> n <| doNoSave [TB.Left]
+      M Down                      -> n <| doNoSave [TB.Down]
+      M Up                        -> n <| doNoSave [TB.Up]
+      M Right                     -> n <| doNoSave [TB.Right]
       C (Remove Forward)          -> n <| do [TB.Delete]
       C (ReplaceChar c)           -> n <| do [TB.Delete, TB.Insert c, TB.Left]
       C (NewLine Below)           -> i <| do [TB.InsertLine, TB.Down]
       C (NewLine Above)           -> i <| do [TB.Up, TB.InsertLine] -- this is incorrect. What if we are at the top line?
       C SwapCase                  -> n <| do [TB.SwapCase, TB.Right]
       C Undo                      -> case last of
-                                       Nothing         -> n <| do []
+                                       Nothing         -> n <| buffer
                                        Just (b, past)  -> n <| HBuffer b past
       _                           -> n buffer
 
@@ -100,11 +104,18 @@ modeStyle mode = let
     NormalMode -> defaultStyle
     EditMode _ -> { defaultStyle | cursor <- LineStyles.solidCursor }
 
+watchHistory : Model -> Model
+watchHistory m = let
+    (HBuffer _ hist) = m.buffer
+    _ = Debug.watch "History" hist
+  in m 
+
 -- CONTROL
 
 main : Signal Html
 main = view <~ model 
 
+-- There is a bug where the first state can't be undone
 model : Signal Model
 model = foldp update init (Debug.watch "Editor Actions" <~ EditorActions.signal)
 

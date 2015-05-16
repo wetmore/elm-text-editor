@@ -57,17 +57,16 @@ idPartial f = Partial identity f
 
 replaceUnderCursor : Key -> ComboState
 replaceUnderCursor key = case key of
-  Esc     -> Null 
   Press c -> Completed <| C <| ReplaceChar c
+  _     -> Null 
 
 findChar : {dir : Direction, til : Bool} -> Key -> ComboState
 findChar params key = case key of
-  Esc     -> Null
   Press c -> Completed <| M <| Find params c
+  _     -> Null
 
 buildCount : String -> Key -> ComboState
 buildCount s key = case key of
-  Esc -> Null
   Press d -> case (Char.isDigit d) of
     True  -> idPartial <| buildCount (cons d s)
     False -> let
@@ -78,6 +77,7 @@ buildCount s key = case key of
           Completed action -> Completed <| Count n action
           Partial f g -> Partial ((Count n) << f) g
           Null -> Null
+  _ -> Null
 
 handleKey : Key -> ComboState -> ComboState
 handleKey key state = case state of
@@ -86,6 +86,7 @@ handleKey key state = case state of
     _                -> g key
   _         -> case key of
     Esc     -> Completed Noop -- Null?
+    Ret     -> Completed <| M Down
     Press c -> case (Char.isDigit c) of
       True  -> case (c == '0') of
         True  -> bindings c
@@ -154,7 +155,7 @@ pressChar c = Press (Char.fromCode c)
 -- KEY SIGNALS
 
 keys : Signal Key
-keys = Signal.merge esc <| pressChar <~ Keyboard.presses
+keys = Signal.mergeMany [esc, ret, pressChar <~ Keyboard.presses]
 
 ret : Signal Key
 ret = Signal.sampleOn Keyboard.enter (Signal.constant Ret) 
