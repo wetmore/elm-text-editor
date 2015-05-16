@@ -4,6 +4,7 @@ import EditorActions exposing (..)
 import TextBuffer as TB
 import Buffer exposing (Line)
 import LineStyles exposing (LineStyle)
+import History exposing (..)
 
 import Html exposing (..)
 import Signal exposing (..)
@@ -15,17 +16,18 @@ import Debug
 
 type EditType = Insert | Replace
 type EditorMode = NormalMode | EditMode EditType 
+type HBuffer = HBuffer TB.Model (History TB.Model)
 
 -- MODEL
 
 -- An editor holds a zipper of TextBuffer models (which are buffers of chars)
 type alias Model = 
   { mode : EditorMode
-  , buffer : TB.Model
+  , buffer : HBuffer
   }
 
 init : Model
-init = normalMode TB.oneLiner
+init = normalMode <| HBuffer TB.oneLiner <| emptyHistory 100
 
 {-
 The editor should maintain a list of buffers, drawing the current one
@@ -46,17 +48,20 @@ the textbuffer. The textbuffer handles its own rendering.
 
 type alias Action = (Key, EditorAction)
 
-normalMode : TB.Model -> Model
+normalMode : HBuffer -> Model
 normalMode m = {mode=NormalMode, buffer=m}
 
-insertMode : TB.Model -> Model
+insertMode : HBuffer -> Model
 insertMode m = {mode=EditMode Insert, buffer=m}
 
 update : Action -> Model -> Model
 update (key, editorAction) {mode, buffer} = let
+    (HBuffer buf hist) = buffer
+    last = recall hist
+    updatedHist = record buf hist
     n = normalMode
     i = insertMode
-    do x = TB.applyActions x buffer
+    do x = HBuffer (TB.applyActions x buf) updatedHist
   in case mode of
     EditMode _ -> case key of
       Ret     -> i <| do [TB.Down]
@@ -76,12 +81,17 @@ update (key, editorAction) {mode, buffer} = let
       C (NewLine Below)           -> i <| do [TB.InsertLine, TB.Down]
       C (NewLine Above)           -> i <| do [TB.Up, TB.InsertLine] -- this is incorrect. What if we are at the top line?
       C SwapCase                  -> n <| do [TB.SwapCase, TB.Right]
-      _                           -> n buffer 
+      C Undo                      -> case last of
+                                       Nothing         -> n <| do []
+                                       Just (b, past)  -> n <| HBuffer b past
+      _                           -> n buffer
 
 -- VIEW
 
+present (HBuffer b _) = b
+
 view : Model -> Html
-view {mode, buffer} = TB.viewWith (modeStyle mode) buffer
+view {mode, buffer} = TB.viewWith (modeStyle mode) <| present buffer
 
 modeStyle : EditorMode -> LineStyle
 modeStyle mode = let
