@@ -36,6 +36,7 @@ type Command = EnterInsert CursorPos
              | Remove Direction
              | NewLine Vertical
              | ReplaceChar Char
+             | SwapCase
 
 type Key = Press Char | Esc | Ret
 
@@ -105,6 +106,7 @@ bindings c = let
     'x' -> cc <| Remove Forward
     'X' -> cc <| Remove Backward
     'r' -> idPartial replaceUnderCursor
+    '~' -> cc <| SwapCase
     -- motions
     'h' -> cm <| Left
     'j' -> cm <| Down

@@ -26,7 +26,7 @@ http://vimdoc.sourceforge.net/htmldoc/motion.html
 	X		Delete [count] characters before the cursor [right enough times, delete]
 	D		Delete from under cursor until end of line, plus [count] - 1 following lines [delete enough]
 	R		Enter Replace mode. Repeat whatever was typed in that session [count] times. [not sure]
-	~		Switch case of the character under the cursor and move the cursor to the right. If a 
+✓	~		Switch case of the character under the cursor and move the cursor to the right. If a 
 			[count] is given, do that many characters.[switchCase]
 	u		Undo [count] changes 
 	U		Undo all latest changes on one line

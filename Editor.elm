@@ -75,6 +75,7 @@ update (key, editorAction) {mode, buffer} = let
       C (ReplaceChar c)           -> n <| do [TB.Delete, TB.Insert c, TB.Left]
       C (NewLine Below)           -> i <| do [TB.InsertLine, TB.Down]
       C (NewLine Above)           -> i <| do [TB.Up, TB.InsertLine] -- this is incorrect. What if we are at the top line?
+      C SwapCase                  -> n <| do [TB.SwapCase, TB.Right]
       _                           -> n buffer 
 
 -- VIEW

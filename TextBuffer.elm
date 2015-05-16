@@ -23,7 +23,7 @@ oneLiner = insertLine emptyLine emptyBuffer
 
 type Action = Up | Down | Left | Right
             | Insert Char | Delete | EOL | BOL
-            | InsertLine
+            | InsertLine | SwapCase
 
 {--
 arrToAction : { x : Int, y : Int } -> Action
@@ -46,6 +46,7 @@ update action model = case action of
   EOL -> endOfLine model
   BOL -> beginningOfLine model
   InsertLine -> insertLine emptyLine model
+  SwapCase -> modifyUnderCursor swapCase model
 
 applyActions : List Action -> Model -> Model
 applyActions = foldl update |> flip
