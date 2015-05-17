@@ -27,7 +27,7 @@ type alias Model =
   }
 
 init : Model
-init = normalMode <| HBuffer TB.oneLiner <| emptyHistory 100 -- TODO start history with initial model recorded
+init = normalMode <| HBuffer TB.oneLiner <| record TB.oneLiner <| emptyHistory 100 
 
 {-
 The editor should maintain a list of buffers, drawing the current one
