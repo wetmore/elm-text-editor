@@ -6,6 +6,8 @@ import Buffer exposing (Line)
 import LineStyles exposing (LineStyle)
 import History exposing (..)
 
+import Graphics.Element exposing (..)
+
 import Html exposing (..)
 import Signal exposing (..)
 import Char
@@ -57,7 +59,6 @@ insertMode m = {mode=EditMode Insert, buffer=m}
 update : Action -> Model -> Model
 update (key, editorAction) {mode, buffer} = let
     (HBuffer buf hist) = buffer
-    last = recall hist
     n = normalMode
     i = insertMode
     do x = let
@@ -85,7 +86,7 @@ update (key, editorAction) {mode, buffer} = let
       C (NewLine Below)           -> i <| do [TB.InsertLine, TB.Down]
       C (NewLine Above)           -> i <| do [TB.Up, TB.InsertLine] -- this is incorrect. What if we are at the top line?
       C SwapCase                  -> n <| do [TB.SwapCase, TB.Right]
-      C Undo                      -> case last of
+      C Undo                      -> case recall hist of
                                        Nothing         -> n <| buffer
                                        Just (b, past)  -> n <| HBuffer b past
       _                           -> n buffer
@@ -112,8 +113,15 @@ watchHistory m = let
 
 -- CONTROL
 
+{--
+main : Signal Element
+main = show <~ EditorActions.pairs
+--}
+
+{--}
 main : Signal Html
 main = view <~ model 
+--}
 
 -- There is a bug where the first state can't be undone
 model : Signal Model

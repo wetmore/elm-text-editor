@@ -1,7 +1,7 @@
 module EditorActions
   ( EditorAction(..), Motion(..), Command(..)
   , CursorPos(..), Direction(..), Vertical(..)
-  , signal, Key(..)
+  , signal, Key(..), pairs
   ) where
 
 import Keyboard
@@ -12,6 +12,7 @@ import String exposing (..)
 import Result exposing (Result)
 import Debug
 import Time exposing (Time, timestamp)
+import Set
 
 -- EXTERNAL
 
@@ -37,9 +38,10 @@ type Command = EnterInsert CursorPos
              | NewLine Vertical
              | ReplaceChar Char
              | SwapCase
-             | Undo
+             | Undo | Redo
 
-type Key = Press Char | Esc | Ret
+type Meta = Ctrl
+type Key  = Press Char | Esc | Ret | Chord (List Meta) Key
 
 
 -- INTERNAL
@@ -87,6 +89,7 @@ handleKey key state = case state of
   _         -> case key of
     Esc     -> Completed Noop -- Null?
     Ret     -> Completed <| M Down
+    Chord [Ctrl] (Press 'r') -> Completed <| C Redo
     Press c -> case (Char.isDigit c) of
       True  -> case (c == '0') of
         True  -> bindings c
@@ -155,7 +158,33 @@ pressChar c = Press (Char.fromCode c)
 -- KEY SIGNALS
 
 keys : Signal Key
-keys = Signal.mergeMany [esc, ret, pressChar <~ Keyboard.presses]
+keys = Signal.mergeMany [ctrlR, esc, ret, pressChar <~ Keyboard.presses]
+
+pairs = (,) <~ Keyboard.presses ~ metasDown
+
+ctrlR' : Signal Key
+ctrlR' = let
+    pairs = (,) <~ Keyboard.presses ~ metasDown
+    mapFn (kc, metas) = case (List.member Ctrl metas) of
+      False -> Nothing
+      True  -> case (Char.fromCode kc == 'r') of
+        False -> Nothing
+        True  -> Just <| Chord [Ctrl] <| Press 'r'
+  in Signal.filterMap mapFn Esc pairs
+
+ctrlR : Signal Key
+ctrlR = let
+    fn set = case (17 `Set.member` set && 82 `Set.member` set) of
+      True -> Just <| Chord [Ctrl] <| Press 'r'
+      False -> Nothing
+  in Signal.filterMap fn Esc Keyboard.keysDown
+
+metasDown : Signal (List Meta)
+metasDown = let
+    fn set = case (Set.member 17 set) of
+      True  -> Just [Ctrl]
+      False -> Nothing
+  in Signal.filterMap fn [] Keyboard.keysDown
 
 ret : Signal Key
 ret = Signal.sampleOn Keyboard.enter (Signal.constant Ret) 
